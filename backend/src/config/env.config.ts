@@ -43,6 +43,9 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().default(''),
   GEMINI_MODEL: z.string().default('gemini-1.5-flash'),
 
+  AGENT_SERVICE_URL: z.string().default('http://127.0.0.1:8080'),
+  AGENT_SERVICE_TIMEOUT_MS: z.coerce.number().default(60000),
+
   SMTP_HOST: z.string().default('smtp.ethereal.email'),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_SECURE: z.coerce.boolean().default(false),

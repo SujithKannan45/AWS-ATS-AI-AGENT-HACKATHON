@@ -44,6 +44,7 @@ Built with Node.js, Express.js, TypeScript, MongoDB, and Google Gemini AI.
     { name: 'Authentication', description: 'User registration, login, token refresh, and password management' },
     { name: 'Resumes', description: 'Resume document upload, parsing, metadata, and Cloudinary storage' },
     { name: 'AI Analysis', description: 'Google Gemini ATS scoring, section evaluation, and match history' },
+    { name: 'AI Agent', description: 'Strands Decider agent chat proxy (JWT forwarded to the Python agent service)' },
     { name: 'Jobs', description: 'Job application pipeline tracker, status milestones, and AI job matching' },
     { name: 'Dashboard', description: 'Aggregated candidate analytics and time-series chart data' },
     { name: 'Notifications', description: 'In-app notification triggers, unread counters, and status mutations' },
@@ -177,6 +178,31 @@ Built with Node.js, Express.js, TypeScript, MongoDB, and Google Gemini AI.
           targetJobTitle: { type: 'string', example: 'Staff Backend Architect' },
           jobDescription: { type: 'string', example: 'Architect scalable distributed systems using Node.js and MongoDB...' },
           customApiKey: { type: 'string', example: 'AIzaSy...' },
+        },
+      },
+      AgentChatRequest: {
+        type: 'object',
+        required: ['message'],
+        properties: {
+          message: { type: 'string', minLength: 1, maxLength: 8000, example: 'Analyze my resume for a backend engineer role' },
+        },
+      },
+      AgentChatResponse: {
+        type: 'object',
+        properties: {
+          reply: { type: 'string', example: 'I analyzed your resume and it matches the backend role.' },
+          decision: {
+            type: 'object',
+            properties: {
+              pattern: { type: 'string', example: 'tool_selection' },
+              selected_tool: { type: 'string', example: 'analyze_resume' },
+              confidence: { type: 'number', example: 0.92 },
+              latency_ms: { type: 'number', nullable: true, example: 34.5 },
+              raw_choice: { type: 'string', nullable: true, example: 'analyze_resume' },
+              used_fallback: { type: 'boolean', example: false },
+              intervention_events: { type: 'array', items: { type: 'object' } },
+            },
+          },
         },
       },
     },
@@ -470,6 +496,42 @@ Built with Node.js, Express.js, TypeScript, MongoDB, and Google Gemini AI.
         ],
         responses: {
           200: { description: 'Report deleted' },
+        },
+      },
+    },
+    '/api/v1/agent/chat': {
+      post: {
+        tags: ['AI Agent'],
+        summary: 'Forward a chat message to the Strands Decider AI agent',
+        security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+        description: 'Protected proxy that forwards the authenticated user\'s Authorization header and validated message to the Python agent service (POST /v1/chat). Bedrock/AWS credentials remain server-side and are never exposed to the frontend.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/AgentChatRequest' } },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Agent reply and Decider tool-selection decision',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    statusCode: { type: 'integer', example: 200 },
+                    data: { $ref: '#/components/schemas/AgentChatResponse' },
+                  },
+                },
+              },
+            },
+          },
+          422: { description: 'Invalid or missing message' },
+          429: { description: 'AI rate limit exceeded' },
+          502: { description: 'Unexpected error from the agent service' },
+          503: { description: 'Agent service unavailable' },
+          504: { description: 'Agent service timed out' },
         },
       },
     },

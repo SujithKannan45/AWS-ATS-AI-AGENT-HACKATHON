@@ -122,6 +122,60 @@ npm start
 
 ---
 
+## 🤖 AI Agent Chat Proxy (Phase 2)
+
+The backend proxies chat requests to the Python **Strands Decider** agent service (see `../agent`). Authentication
+is enforced with the existing JWT middleware and the caller's verified `Authorization` header is forwarded
+unchanged — the agent resolves the user identity from the JWT, so no client-supplied user ID is ever trusted.
+
+| Route | Method | Description |
+| :--- | :--- | :--- |
+| `/api/v1/agent/chat` | `POST` | Authenticated proxy to the Python agent's `POST /v1/chat` |
+
+**Request body:**
+
+```json
+{ "message": "Analyze my resume for a backend engineer role" }
+```
+
+**Success response (`data` mirrors the agent's contract):**
+
+```json
+{
+  "status": "success",
+  "statusCode": 200,
+  "message": "AI agent response generated successfully",
+  "data": {
+    "reply": "...",
+    "decision": {
+      "pattern": "tool_selection",
+      "selected_tool": "analyze_resume",
+      "confidence": 0.92,
+      "latency_ms": 34.5,
+      "raw_choice": "analyze_resume",
+      "used_fallback": false,
+      "intervention_events": []
+    }
+  },
+  "timestamp": "2026-08-25T13:40:00.000Z"
+}
+```
+
+**Environment configuration:**
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `AGENT_SERVICE_URL` | `http://127.0.0.1:8080` | Base URL of the Python agent service |
+| `AGENT_SERVICE_TIMEOUT_MS` | `60000` | Agent request timeout in milliseconds |
+
+**Notes:**
+
+* The endpoint is protected by `authenticate` and reuses the existing `aiRateLimiter`.
+* Only the user's JWT is forwarded; AWS/Bedrock credentials live solely inside the Python agent process and are never exposed to the frontend.
+* Upstream agent failures are mapped to safe HTTP responses (`400`/`401`/`403`/`404`/`429` passthrough, `502` unexpected, `503` unavailable, `504` timeout).
+
+---
+
 ## 🛡️ Built-in Security & Resilience Features
 
 * **Strict CORS Whitelist:** Dynamic origin validation from comma-separated environment variables.
