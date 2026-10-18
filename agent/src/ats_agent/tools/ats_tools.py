@@ -61,8 +61,8 @@ def build_ats_tools(client: AtsClient) -> list[Any]:
             slim = [
                 {
                     "id": j.get("id"),
-                    "title": j.get("title"),
-                    "company": j.get("company"),
+                    "title": j.get("jobTitle"),
+                    "company": j.get("companyName"),
                     "status": j.get("status"),
                 }
                 for j in jobs

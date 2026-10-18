@@ -34,6 +34,9 @@ const ResumeBuilderPage = React.lazy(() =>
 const AIAnalysisPage = React.lazy(() =>
   import('@/pages/AIAnalysisPage').then((m) => ({ default: m.AIAnalysisPage }))
 );
+const AgentChatPage = React.lazy(() =>
+  import('@/pages/AgentChatPage').then((m) => ({ default: m.AgentChatPage }))
+);
 const JobsPage = React.lazy(() =>
   import('@/pages/JobsPage').then((m) => ({ default: m.JobsPage }))
 );
@@ -152,6 +155,14 @@ const router = createBrowserRouter([
             element: (
               <React.Suspense fallback={<SuspenseFallback />}>
                 <AIAnalysisPage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: 'agent',
+            element: (
+              <React.Suspense fallback={<SuspenseFallback />}>
+                <AgentChatPage />
               </React.Suspense>
             ),
           },

@@ -5,6 +5,7 @@ import {
   FileText,
   PenTool,
   Sparkles,
+  Bot,
   Briefcase,
   BarChart3,
   Bell,
@@ -72,6 +73,11 @@ export function DashboardLayout() {
         title: 'AI Analysis',
         href: '/ai-analysis',
         icon: <Sparkles className="h-5 w-5 text-indigo-400" />,
+      },
+      {
+        title: 'AI Assistant',
+        href: '/agent',
+        icon: <Bot className="h-5 w-5 text-indigo-400" />,
       },
       {
         title: 'Job Tracker',

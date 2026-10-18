@@ -95,6 +95,11 @@ describe('Agent Chat Proxy Integration Tests', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.reply).toBe(mockAgentPayload.reply);
     expect(res.body.data.decision.selected_tool).toBe('analyze_resume');
+    // Decision metadata must survive the proxy unchanged for the UI to display it.
+    expect(res.body.data.decision.pattern).toBe('tool_selection');
+    expect(res.body.data.decision.confidence).toBe(0.92);
+    expect(res.body.data.decision.latency_ms).toBe(34.5);
+    expect(res.body.data.decision.used_fallback).toBe(false);
 
     expect(fetchCalls).toHaveLength(1);
     expect(fetchCalls[0].url).toBe('http://127.0.0.1:8080/v1/chat');
@@ -165,6 +170,58 @@ describe('Agent Chat Proxy Integration Tests', () => {
 
   it('should return 502 for unexpected agent server errors', async () => {
     fetchHandler = async () => fakeResponse(500, { detail: 'Agent request failed.' });
+
+    const res = await request(app)
+      .post('/api/v1/agent/chat')
+      .set('Authorization', `Bearer ${getCandidateToken()}`)
+      .send({ message: 'Analyze my resume' });
+
+    expect(res.status).toBe(502);
+    expect(res.body.success).toBe(false);
+    // Internal upstream 5xx detail must never reach the client.
+    expect(res.body.message).not.toContain('Agent request failed');
+  });
+
+  it('should propagate an agent 400 with its safe validation detail', async () => {
+    fetchHandler = async () =>
+      fakeResponse(400, { detail: 'message exceeds maximum length (8000 characters).' });
+
+    const res = await request(app)
+      .post('/api/v1/agent/chat')
+      .set('Authorization', `Bearer ${getCandidateToken()}`)
+      .send({ message: 'Analyze my resume' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('exceeds maximum length');
+  });
+
+  it('should map an agent 401 to a 401 response', async () => {
+    fetchHandler = async () =>
+      fakeResponse(401, { detail: 'Invalid or expired access token.' });
+
+    const res = await request(app)
+      .post('/api/v1/agent/chat')
+      .set('Authorization', `Bearer ${getCandidateToken()}`)
+      .send({ message: 'Analyze my resume' });
+
+    expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+  });
+
+  it('should map an agent 429 to a 429 response', async () => {
+    fetchHandler = async () => fakeResponse(429, { detail: 'Too many requests.' });
+
+    const res = await request(app)
+      .post('/api/v1/agent/chat')
+      .set('Authorization', `Bearer ${getCandidateToken()}`)
+      .send({ message: 'Analyze my resume' });
+
+    expect(res.status).toBe(429);
+    expect(res.body.success).toBe(false);
+  });
+
+  it('should return 502 when the agent returns a malformed payload', async () => {
+    fetchHandler = async () => fakeResponse(200, { decision: {} });
 
     const res = await request(app)
       .post('/api/v1/agent/chat')
