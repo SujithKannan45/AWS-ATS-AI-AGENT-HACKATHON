@@ -11,6 +11,7 @@ Minimal Python sidecar for the **Agent Experience Hackathon**: **Strands Decider
 5. Tools call existing routes: `/ai/analyze`, `/jobs`, `/jobs/:id/match`. Resume scoring still uses **Gemini on the Express backend** (`GEMINI_API_KEY` in backend `.env` only).
 
 Reusable hackathon asset: `src/ats_agent/decision_patterns/tool_selection.py`
+Full reusable-pattern guide (typed questions, thresholds, confidence, intervention, fallback, reuse): [`docs/decision-patterns/tool-selection.md`](docs/decision-patterns/tool-selection.md)
 
 Official references:
 
@@ -113,6 +114,8 @@ See `.env.example`. The Python service does **not** use `GEMINI_API_KEY`; config
 | GET | `/health` | Agent + Decider reachability |
 | POST | `/v1/chat` | Body: `{ "message": "..." }`, header: `Authorization: Bearer <JWT>` |
 
-## Phase 2 (not in this folder)
+## Related phases
 
-Add Express proxy route to forward chat to this service so the browser never holds Bedrock credentials.
+- **Phase 2 — Express proxy:** the backend exposes `POST /api/v1/agent/chat` and forwards the verified JWT to this service. See [`../backend/README.md`](../backend/README.md#-ai-agent-chat-proxy-phase-2).
+- **Phase 3 — Frontend:** the React AI Career Assistant lives at `/agent` ([`../frontend/src/pages/AgentChatPage.tsx`](../frontend/src/pages/AgentChatPage.tsx)).
+- **Project overview, setup order, tests, and the 3-minute demo script:** [`../README.md`](../README.md).
